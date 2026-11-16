@@ -46,3 +46,7 @@ It re-attaches itself when Explorer restarts.
 - It keeps animating while other windows cover it.
 
 Settings and a `debug.log` are kept in `%AppData%\HtmlWallpaper`.
+
+## License
+
+[MIT](LICENSE)
