@@ -17,7 +17,7 @@ The app sits in the tray next to the clock. Right-click its icon for:
 - **Choose HTML file** – use a local page
 - **Open web address** – use a web page
 - **Reload**
-- **Start with Windows**
+- **Start with Windows** – on by default; untick it to turn it off
 - **Exit** – restores your normal wallpaper
 
 After the first build, start it with `app\HtmlWallpaper.exe`. You can also pass a file or address as an argument.

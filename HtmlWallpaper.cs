@@ -3,6 +3,7 @@
 // Written for the C# 5 compiler that ships with Windows (.NET Framework 4.x).
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -137,7 +138,7 @@ class App : ApplicationContext
         menu.Items.Add("Exit (restore normal wallpaper)", null, delegate { Quit(); });
 
         tray = new NotifyIcon();
-        tray.Icon = SystemIcons.Application;
+        tray.Icon = MakeTrayIcon();
         tray.Text = "HTML Wallpaper";
         tray.ContextMenuStrip = menu;
         tray.Visible = true;
@@ -150,6 +151,17 @@ class App : ApplicationContext
         messages.ExplorerRestarted += delegate { Log.Write("Explorer restarted"); rebuildTimer.Stop(); rebuildTimer.Start(); };
         SystemEvents.DisplaySettingsChanged += OnDisplayChanged;
 
+        // Start with Windows is on by default: switched on once, at the first run.
+        // After that the tray menu decides, so unticking it stays unticked.
+        string firstRunMarker = Path.Combine(Log.Dir, "autostart-set.txt");
+        if (!File.Exists(firstRunMarker))
+        {
+            SetAutoStart(true);
+            try { Directory.CreateDirectory(Log.Dir); File.WriteAllText(firstRunMarker, "done"); } catch { }
+        }
+        else if (IsAutoStart()) SetAutoStart(true);   // keeps the path right if the folder was moved
+        startItem.Checked = IsAutoStart();
+
         if (args.Length > 0) { source = args[0]; Save(); }
         else { try { if (File.Exists(settingsFile)) source = File.ReadAllText(settingsFile).Trim(); } catch { } }
 
@@ -159,6 +171,31 @@ class App : ApplicationContext
             ChooseFile();
         }
         else Rebuild();
+    }
+
+    // A small round icon in the Oakbloom colours, drawn in code so no icon file is needed.
+    static Icon MakeTrayIcon()
+    {
+        try
+        {
+            int size = Math.Max(16, SystemInformation.SmallIconSize.Width);
+            using (Bitmap bmp = new Bitmap(size, size))
+            {
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.Clear(Color.Transparent);
+                    RectangleF disc = new RectangleF(1f, 1f, size - 2f, size - 2f);
+                    using (LinearGradientBrush fill = new LinearGradientBrush(disc, Color.FromArgb(255, 111, 181), Color.FromArgb(176, 124, 255), 45f))
+                        g.FillEllipse(fill, disc);
+                    float d = size * 0.38f;
+                    using (SolidBrush mint = new SolidBrush(Color.FromArgb(111, 255, 210)))
+                        g.FillEllipse(mint, size - d - 1.5f, size - d - 1.5f, d, d);
+                }
+                return Icon.FromHandle(bmp.GetHicon());
+            }
+        }
+        catch { return SystemIcons.Application; }
     }
 
     // ---------- choosing what to show ----------
