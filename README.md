@@ -6,7 +6,7 @@ Use any HTML file or web page as an animated desktop wallpaper on Windows. The p
 
 1. Download this repository (Code → Download ZIP) and unzip it somewhere permanent.
 2. Double-click `build.cmd`. It downloads Microsoft's WebView2 SDK from nuget.org, compiles `HtmlWallpaper.cs` with the C# compiler built into Windows, and starts the app. Windows may warn about running a downloaded script.
-3. Pick an HTML file when asked. Try `examples/oakbloom-markets-wallpaper.html`.
+3. Pick an HTML file when asked. Try `examples/oakbloom-markets-wallpaper.html` or `examples/silk-markets-wallpaper.html`.
 
 Nothing else needs installing: the compiler ships with Windows, and the WebView2 runtime is part of Windows 11 and current Windows 10.
 
@@ -22,7 +22,15 @@ The app sits in the tray next to the clock. Right-click its icon for:
 
 After the first build, start it with `app\HtmlWallpaper.exe`. You can also pass a file or address as an argument.
 
-## Example: Oakbloom markets
+## Examples
+
+Both examples show the same live market panel (S&P 500, the Magnificent Seven, Bitcoin and gold) and can be previewed in the browser at [oakbloom.se/apps/html-wallpaper](http://www.oakbloom.se/apps/html-wallpaper/).
+
+### Silk markets
+
+`examples/silk-markets-wallpaper.html` is flowing blue silk under a violet night sky, drawn live with a WebGL shader and no libraries. The colours shift cooler on days the S&P 500 is up and more violet on down days. You can also point the app at the hosted copy with **Open web address**: `http://www.oakbloom.se/apps/html-wallpaper/silk-markets.html`.
+
+### Oakbloom markets
 
 `examples/oakbloom-markets-wallpaper.html` is the glowing oak scene from [oakbloom.se](http://www.oakbloom.se/) with a live market panel: the S&P 500, the Magnificent Seven, Bitcoin and gold.
 
