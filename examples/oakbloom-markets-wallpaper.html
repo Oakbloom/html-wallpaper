@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oakbloom Markets Wallpaper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+:root {
+  --bg: #07060f;
+  --text: #f2eefe;
+  --muted: #a9a3c2;
+  --pink: #ff6fb5;
+  --violet: #b07cff;
+  --mint: #6fffd2;
+  --peach: #ffb36f;
+  --glass: rgba(18, 14, 34, 0.55);
+  --line: rgba(255, 255, 255, 0.1);
+  --up: var(--mint);
+  --down: var(--pink);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+/* 1rem = 16px on a 1080p screen, and scales with the screen height (1440p, 4K) */
+html { font-size: calc(100vh / 67.5); }
+body {
+  margin: 0; height: 100vh; overflow: hidden;
+  background: radial-gradient(ellipse at 35% 30%, #3a1050 0%, transparent 60%),
+              radial-gradient(ellipse at 15% 85%, #0d3a33 0%, transparent 50%), var(--bg);
+  color: var(--text);
+  font: 400 1rem/1.4 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none; cursor: default;
+}
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.5s; }
+body.scene-ready #scene { opacity: 1; }
+.vignette {
+  position: fixed; inset: 0; pointer-events: none;
+  background: linear-gradient(270deg, rgba(7, 6, 15, 0.6) 0%, rgba(7, 6, 15, 0.25) 35%, transparent 55%),
+              radial-gradient(ellipse at 40% 40%, transparent 40%, rgba(7, 6, 15, 0.75) 100%);
+}
+
+/* ---------- market panel ---------- */
+.panel {
+  position: fixed; top: 2.5rem; right: 2.5rem; bottom: 5rem; /* room for the taskbar */
+  width: 29rem; display: flex; flex-direction: column; gap: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.card {
+  background: var(--glass); border: 1px solid var(--line); border-radius: 1.25rem;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  padding: 1.1rem 1.3rem;
+}
+.head { display: flex; align-items: center; gap: 0.7rem; padding: 0 0.3rem; }
+.brand-mark {
+  width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  background: conic-gradient(from 200deg, var(--pink), var(--violet), var(--mint), var(--pink));
+  box-shadow: 0 0 1.4rem rgba(255, 111, 181, 0.5);
+  animation: spin 10s linear infinite;
+}
+.brand { font: 500 1.25rem "Space Grotesk", system-ui, sans-serif; letter-spacing: -0.03em; }
+.brand b { font-weight: 700; background: linear-gradient(90deg, var(--pink), var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.clock { margin-left: auto; text-align: right; line-height: 1.15; }
+.clock .time { font: 600 1.5rem "Space Grotesk", system-ui, sans-serif; letter-spacing: -0.02em; }
+.clock .date { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+
+.label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; }
+.dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--muted); }
+.dot.open { background: var(--mint); box-shadow: 0 0 0.8rem var(--mint); animation: blink 2s ease-in-out infinite; }
+.status { margin-left: auto; letter-spacing: 0.1em; }
+
+.hero .value { font: 700 3.4rem/1.05 "Space Grotesk", system-ui, sans-serif; letter-spacing: -0.03em; margin-top: 0.35rem; }
+.hero .chg { font-size: 1.05rem; font-weight: 600; margin-top: 0.15rem; }
+.hero svg { width: 100%; height: 4.2rem; margin-top: 0.6rem; display: block; }
+
+.up { color: var(--up); }
+.down { color: var(--down); }
+.flat { color: var(--muted); }
+
+.list { padding: 0.5rem 1.3rem; flex: 0 1 auto; }
+.row { display: grid; grid-template-columns: 4.1rem 5.2rem 1fr 5.2rem 5.3rem; align-items: center; gap: 0.5rem; padding: 0.52rem 0; }
+.row + .row { border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.row .sym { font: 600 1.05rem "Space Grotesk", system-ui, sans-serif; }
+.row .name { font-size: 0.8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row svg { width: 100%; height: 1.6rem; display: block; }
+.row .price { text-align: right; font-weight: 500; }
+.pill { justify-self: end; font-size: 0.82rem; font-weight: 600; padding: 0.16rem 0.5rem; border-radius: 99px; background: rgba(255, 255, 255, 0.06); white-space: nowrap; }
+
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.mini .value { font: 700 1.75rem/1.1 "Space Grotesk", system-ui, sans-serif; letter-spacing: -0.02em; margin-top: 0.3rem; }
+.mini .chg { font-size: 0.85rem; font-weight: 600; }
+.mini svg { width: 100%; height: 2rem; margin-top: 0.4rem; display: block; }
+.mini .ico { font-size: 0.95rem; }
+
+.foot { font-size: 0.7rem; color: var(--muted); padding: 0 0.3rem; display: flex; justify-content: space-between; gap: 1rem; opacity: 0.85; }
+.foot .stale { color: var(--peach); }
+
+.value, .price { transition: text-shadow 1.2s, color 1.2s; }
+.tick-up { color: var(--up); text-shadow: 0 0 1rem rgba(111, 255, 210, 0.7); }
+.tick-down { color: var(--down); text-shadow: 0 0 1rem rgba(255, 111, 181, 0.7); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink { 50% { opacity: 0.35; } }
+
+/* portrait / very narrow screens: panel goes along the bottom */
+@media (max-aspect-ratio: 1/1) {
+  .panel { top: auto; left: 1.5rem; right: 1.5rem; width: auto; }
+}
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="vignette"></div>
+
+<aside class="panel">
+  <div class="head">
+    <span class="brand-mark"></span>
+    <span class="brand"><b>oak</b>bloom</span>
+    <div class="clock"><div class="time" id="time">--:--</div><div class="date" id="date"></div></div>
+  </div>
+
+  <div class="card hero" data-sym="^GSPC">
+    <div class="label"><span class="dot" id="mktDot"></span>S&amp;P 500 <span class="status" id="mktStatus"></span></div>
+    <div class="value">—</div>
+    <div class="chg flat">&nbsp;</div>
+    <svg viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card list" id="mag7"></div>
+
+  <div class="pair">
+    <div class="card mini" data-sym="BTC-USD">
+      <div class="label"><span class="ico" style="color:var(--peach)">₿</span>Bitcoin</div>
+      <div class="value">—</div>
+      <div class="chg flat">&nbsp;</div>
+      <svg viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="card mini" data-sym="GC=F">
+      <div class="label"><span class="ico" style="color:var(--peach)">◆</span>Gold / oz</div>
+      <div class="value">—</div>
+      <div class="chg flat">&nbsp;</div>
+      <svg viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="foot"><span id="updated">Loading prices…</span><span>Yahoo Finance · Binance</span></div>
+</aside>
+
+<!-- ======================= market data ======================= -->
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const FINNHUB_KEY = params.get('finnhub') || '';   // optional fallback: ?finnhub=YOUR_KEY
+  const STOCK_REFRESH = 60_000;                      // S&P, Mag 7, gold
+  const BTC_REFRESH = 15_000;
+
+  const MAG7 = [
+    ['AAPL', 'Apple'], ['MSFT', 'Microsoft'], ['GOOGL', 'Alphabet'], ['AMZN', 'Amazon'],
+    ['NVDA', 'Nvidia'], ['META', 'Meta'], ['TSLA', 'Tesla'],
+  ];
+  const YAHOO_SYMS = ['^GSPC', ...MAG7.map(m => m[0]), 'GC=F', 'BTC-USD'];
+
+  const $ = id => document.getElementById(id);
+  const esc = s => (window.CSS && CSS.escape) ? CSS.escape(s) : s;
+  const state = {};        // sym -> { price, prev, pct, spark[] }
+  let lastStockOk = 0, sp = null;
+
+  // ----- build Mag 7 rows -----
+  $('mag7').innerHTML = MAG7.map(([s, n]) => `
+    <div class="row" data-sym="${s}">
+      <span class="sym">${s}</span><span class="name">${n}</span>
+      <svg viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+      <span class="price value">—</span><span class="pill chg flat">—</span>
+    </div>`).join('');
+
+  // ----- formatting -----
+  const fmt = (v, d) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtPrice = (sym, v) => sym === 'BTC-USD' ? '$' + fmt(v, 0) : sym === '^GSPC' ? fmt(v, 2) : '$' + fmt(v, 2);
+  const dir = pct => pct > 0.005 ? 'up' : pct < -0.005 ? 'down' : 'flat';
+  const arrow = pct => pct > 0.005 ? '▲' : pct < -0.005 ? '▼' : '•';
+
+  function sparkline(svg, pts, prev, cls) {
+    pts = (pts || []).filter(v => v != null && isFinite(v));
+    if (pts.length < 2) { svg.innerHTML = ''; return; }
+    let lo = Math.min(...pts), hi = Math.max(...pts);
+    if (prev != null) { lo = Math.min(lo, prev); hi = Math.max(hi, prev); }
+    const span = (hi - lo) || 1, W = 300, H = 60, pad = 4;
+    const x = i => (i / (pts.length - 1)) * W;
+    const y = v => H - pad - ((v - lo) / span) * (H - pad * 2);
+    const line = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const col = cls === 'up' ? '#6fffd2' : cls === 'down' ? '#ff6fb5' : '#a9a3c2';
+    const id = 'g' + Math.random().toString(36).slice(2, 8);
+    svg.innerHTML = `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${col}" stop-opacity=".35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/>
+      </linearGradient></defs>
+      ${prev != null ? `<line x1="0" x2="${W}" y1="${y(prev).toFixed(1)}" y2="${y(prev).toFixed(1)}" stroke="rgba(255,255,255,.25)" stroke-width="1" stroke-dasharray="3 5" vector-effect="non-scaling-stroke"/>` : ''}
+      <polygon points="0,${H} ${line} ${W},${H}" fill="url(#${id})"/>
+      <polyline points="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+  }
+
+  function render(sym) {
+    const d = state[sym], el = document.querySelector(`[data-sym="${esc(sym)}"]`);
+    if (!d || !el || d.price == null) return;
+    const valueEl = el.querySelector('.value'), chgEl = el.querySelector('.chg');
+    const text = fmtPrice(sym, d.price);
+    if (valueEl.textContent !== text) {
+      const old = valueEl.dataset.v ? +valueEl.dataset.v : null;
+      valueEl.textContent = text; valueEl.dataset.v = d.price;
+      if (old != null && old !== d.price) {
+        const c = d.price > old ? 'tick-up' : 'tick-down';
+        valueEl.classList.add(c); setTimeout(() => valueEl.classList.remove(c), 1400);
+      }
+    }
+    if (d.pct != null) {
+      const cls = dir(d.pct), sign = d.pct > 0 ? '+' : '';
+      const pctTxt = `${arrow(d.pct)} ${sign}${d.pct.toFixed(2)}%`;
+      const abs = d.prev != null ? d.price - d.prev : null;
+      chgEl.textContent = (el.classList.contains('hero') && abs != null)
+        ? `${pctTxt}  ·  ${abs > 0 ? '+' : ''}${fmt(abs, 2)} pts`
+        : (el.classList.contains('mini') && sym === 'BTC-USD') ? pctTxt + ' · 24h' : pctTxt;
+      chgEl.className = chgEl.className.replace(/\b(up|down|flat)\b/g, '').trim() + ' ' + cls;
+      sparkline(el.querySelector('svg'), d.spark, sym === 'BTC-USD' ? null : d.prev, cls);
+    }
+    if (sym === '^GSPC') window.dispatchEvent(new CustomEvent('market:mood', { detail: d.pct }));
+  }
+  const renderAll = () => Object.keys(state).forEach(render);
+
+  // ----- cache so the wallpaper has numbers right after a restart -----
+  function save() { try { localStorage.setItem('oakbloom-wallpaper', JSON.stringify({ t: lastStockOk, state })); } catch (e) {} }
+  try {
+    const c = JSON.parse(localStorage.getItem('oakbloom-wallpaper') || 'null');
+    if (c && c.state) { Object.assign(state, c.state); lastStockOk = c.t || 0; renderAll(); }
+  } catch (e) {}
+
+  // ----- fetch helpers -----
+  async function get(url, ms = 15000) {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
+    try {
+      const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.text();
+    } finally { clearTimeout(timer); }
+  }
+
+  // Yahoo Finance "spark": every symbol in one request, with intraday points.
+  // Yahoo blocks direct browser calls (CORS), so the request goes through the
+  // r.jina.ai reader, which returns the same JSON with CORS enabled.
+  function yahooUrl() {
+    return 'https://query1.finance.yahoo.com/v7/finance/spark?symbols=' +
+      YAHOO_SYMS.map(encodeURIComponent).join(',') + '&range=1d&interval=15m&_=' + Date.now();
+  }
+  const STOCK_SOURCES = [
+    () => get('https://r.jina.ai/' + yahooUrl()),
+    () => get(yahooUrl(), 6000),   // works where CORS is not enforced
+  ];
+  function parseYahoo(text) {
+    const a = text.indexOf('{"spark"'), b = text.lastIndexOf('}');
+    if (a < 0) throw new Error('no data');
+    const j = JSON.parse(text.slice(a, b + 1));
+    let n = 0;
+    for (const item of j.spark.result) {
+      const resp = item.response && item.response[0]; if (!resp) continue;
+      const m = resp.meta, price = m.regularMarketPrice, prev = m.previousClose ?? m.chartPreviousClose;
+      if (price == null) continue;
+      const close = (resp.indicators?.quote?.[0]?.close || []).filter(v => v != null);
+      const cur = state[item.symbol] || {};
+      // Bitcoin's live price comes from Binance; Yahoo only supplies its sparkline.
+      if (item.symbol === 'BTC-USD' && cur.live) { cur.spark = close; state[item.symbol] = cur; continue; }
+      state[item.symbol] = { price, prev, pct: prev ? (price / prev - 1) * 100 : null, spark: close };
+      if (item.symbol === '^GSPC') sp = m.currentTradingPeriod && m.currentTradingPeriod.regular;
+      n++;
+    }
+    if (!n) throw new Error('empty');
+  }
+  async function finnhubStocks() {   // optional fallback, needs a free key; S&P shown via the SPY ETF x10
+    const syms = ['SPY', ...MAG7.map(m => m[0])];
+    await Promise.all(syms.map(async s => {
+      const q = JSON.parse(await get(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${FINNHUB_KEY}`));
+      if (!q.c) return;
+      const key = s === 'SPY' ? '^GSPC' : s, k = s === 'SPY' ? 10 : 1;
+      state[key] = { ...(state[key] || {}), price: q.c * k, prev: q.pc * k, pct: q.dp };
+    }));
+  }
+
+  let srcIdx = 0;
+  async function refreshStocks() {
+    let ok = false;
+    for (let i = 0; i < STOCK_SOURCES.length && !ok; i++) {
+      const k = (srcIdx + i) % STOCK_SOURCES.length;
+      try { parseYahoo(await STOCK_SOURCES[k]()); srcIdx = k; ok = true; } catch (e) {}
+    }
+    if (!ok && FINNHUB_KEY) { try { await finnhubStocks(); ok = true; } catch (e) {} }
+    if (!ok) {   // gold spot price as a last resort
+      try {
+        const g = JSON.parse(await get('https://api.gold-api.com/price/XAU'));
+        if (g.price) { const c = state['GC=F'] || {}; state['GC=F'] = { ...c, price: g.price, pct: c.prev ? (g.price / c.prev - 1) * 100 : c.pct }; }
+      } catch (e) {}
+    }
+    if (ok) { lastStockOk = Date.now(); save(); }
+    renderAll(); status();
+  }
+
+  async function refreshBtc() {
+    try {
+      const t = JSON.parse(await get('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT', 8000));
+      const c = state['BTC-USD'] || {};
+      state['BTC-USD'] = { ...c, price: +t.lastPrice, prev: +t.openPrice, pct: +t.priceChangePercent, live: true };
+    } catch (e) {
+      try {
+        const t = JSON.parse(await get('https://api.coinbase.com/v2/prices/BTC-USD/spot', 8000));
+        const c = state['BTC-USD'] || {};
+        state['BTC-USD'] = { ...c, price: +t.data.amount, live: true };
+      } catch (e2) {}
+    }
+    render('BTC-USD');
+  }
+
+  // ----- clock + market status -----
+  function status() {
+    const now = Date.now() / 1000;
+    let open;
+    if (sp && sp.start && now < sp.end + 86400) open = now >= sp.start && now < sp.end;
+    else {   // fallback: New York clock, Mon-Fri 9:30-16:00
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()).map(x => [x.type, x.value]));
+      const mins = (+p.hour % 24) * 60 + +p.minute;
+      open = !['Sat', 'Sun'].includes(p.weekday) && mins >= 570 && mins < 960;
+    }
+    $('mktDot').classList.toggle('open', open);
+    $('mktStatus').textContent = open ? 'Market open' : 'Market closed';
+    const u = $('updated');
+    if (!lastStockOk) { u.textContent = 'Waiting for prices…'; return; }
+    const age = Date.now() - lastStockOk;
+    const hhmm = new Date(lastStockOk).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    u.textContent = (age > 5 * 60_000 ? 'Offline · last update ' : 'Updated ') + hhmm;
+    u.classList.toggle('stale', age > 5 * 60_000);
+  }
+  function clock() {
+    const d = new Date();
+    $('time').textContent = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    $('date').textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  clock(); status();
+  setInterval(() => { clock(); status(); }, 5000);
+  refreshStocks(); setInterval(refreshStocks, STOCK_REFRESH);
+  refreshBtc(); setInterval(refreshBtc, BTC_REFRESH);
+})();
+</script>
+
+<!-- ======================= 3D scene (from oakbloom.se) ======================= -->
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const params = new URLSearchParams(location.search);
+const FPS = Math.max(10, Math.min(60, +params.get('fps') || 30));   // ?fps=60 for smoother motion
+const canvas = document.getElementById('scene');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const BG = 0x07060f;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(BG);
+scene.fog = new THREE.FogExp2(BG, 0.04);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 300);
+
+let seed = 20261113;
+const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const PALETTE = [0xff6fb5, 0xb07cff, 0x6fffd2, 0xffb36f, 0xff8fd0].map(c => new THREE.Color(c));
+
+function dotTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.25, 'rgba(255,255,255,.85)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const DOT = dotTexture();
+
+// lights
+scene.add(new THREE.HemisphereLight(0x9a7cff, 0x120818, 0.6));
+const crown = new THREE.PointLight(0xff6fb5, 40, 18, 1.6);
+crown.position.set(0, 4, 0);
+scene.add(crown);
+const rim = new THREE.PointLight(0x6fffd2, 25, 20, 1.6);
+rim.position.set(-5, 1, -4);
+scene.add(rim);
+
+// the oak
+const tree = new THREE.Group();
+scene.add(tree);
+const barkMat = new THREE.MeshStandardMaterial({
+  color: 0x2b1d33, roughness: 0.75, metalness: 0.15, emissive: 0x3a1050, emissiveIntensity: 0.35,
+});
+const UP = new THREE.Vector3(0, 1, 0);
+const tips = [];
+function branch(start, dir, len, rad, depth) {
+  const end = start.clone().addScaledVector(dir, len);
+  const geo = new THREE.CylinderGeometry(rad * 0.7, rad, len, 7, 1);
+  geo.translate(0, len / 2, 0);
+  const mesh = new THREE.Mesh(geo, barkMat);
+  mesh.position.copy(start);
+  mesh.quaternion.setFromUnitVectors(UP, dir);
+  tree.add(mesh);
+  if (depth === 0) { tips.push(end); return; }
+  if (depth <= 2) tips.push(end);
+  const n = depth > 3 ? 2 : 3;
+  const base = rand() * Math.PI * 2;
+  for (let i = 0; i < n; i++) {
+    const a = base + (i / n) * Math.PI * 2 + rand() * 0.6;
+    const axis = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+    const nd = dir.clone().applyAxisAngle(axis, 0.4 + rand() * 0.5);
+    nd.y += 0.22;
+    nd.normalize();
+    branch(end, nd, len * (0.7 + rand() * 0.14), rad * 0.66, depth - 1);
+  }
+}
+branch(new THREE.Vector3(0, -2.4, 0), UP.clone(), 1.7, 0.3, 6);
+
+// blossoms
+const PER_TIP = 14;
+const bloomCount = tips.length * PER_TIP;
+const bPos = new Float32Array(bloomCount * 3);
+const bCol = new Float32Array(bloomCount * 3);
+const bBase = new Float32Array(bloomCount * 3);
+for (let i = 0, k = 0; i < tips.length; i++) {
+  const t = tips[i];
+  const col = PALETTE[Math.floor(rand() * PALETTE.length)];
+  for (let j = 0; j < PER_TIP; j++, k++) {
+    const r = Math.pow(rand(), 0.6) * 0.55;
+    const th = rand() * Math.PI * 2, ph = Math.acos(2 * rand() - 1);
+    bBase[k * 3] = t.x + r * Math.sin(ph) * Math.cos(th);
+    bBase[k * 3 + 1] = t.y + r * Math.cos(ph);
+    bBase[k * 3 + 2] = t.z + r * Math.sin(ph) * Math.sin(th);
+    const c = col.clone().lerp(PALETTE[(j % PALETTE.length)], 0.25);
+    bCol[k * 3] = c.r; bCol[k * 3 + 1] = c.g; bCol[k * 3 + 2] = c.b;
+  }
+}
+bPos.set(bBase);
+const bloomGeo = new THREE.BufferGeometry();
+bloomGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
+bloomGeo.setAttribute('color', new THREE.BufferAttribute(bCol, 3));
+const bloomMat = new THREE.PointsMaterial({
+  size: 0.1, map: DOT, vertexColors: true, transparent: true, opacity: 0.75,
+  depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+});
+tree.add(new THREE.Points(bloomGeo, bloomMat));
+
+// falling petals
+const PETALS = 700;
+const pPos = new Float32Array(PETALS * 3);
+const pCol = new Float32Array(PETALS * 3);
+const pVel = new Float32Array(PETALS * 2);
+function resetPetal(i, anywhere) {
+  const r = 1 + Math.sqrt(rand()) * 9;
+  const a = rand() * Math.PI * 2;
+  pPos[i * 3] = Math.cos(a) * r;
+  pPos[i * 3 + 1] = anywhere ? -3 + rand() * 12 : 8 + rand() * 2;
+  pPos[i * 3 + 2] = Math.sin(a) * r;
+  pVel[i * 2] = 0.25 + rand() * 0.5;
+  pVel[i * 2 + 1] = rand() * Math.PI * 2;
+}
+for (let i = 0; i < PETALS; i++) {
+  resetPetal(i, true);
+  const c = PALETTE[i % PALETTE.length];
+  pCol[i * 3] = c.r; pCol[i * 3 + 1] = c.g; pCol[i * 3 + 2] = c.b;
+}
+const petalGeo = new THREE.BufferGeometry();
+petalGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+petalGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+scene.add(new THREE.Points(petalGeo, new THREE.PointsMaterial({
+  size: 0.07, map: DOT, vertexColors: true, transparent: true, opacity: 0.85,
+  depthWrite: false, blending: THREE.AdditiveBlending,
+})));
+
+// stars
+const STARS = 1800;
+const sPos = new Float32Array(STARS * 3);
+for (let i = 0; i < STARS; i++) {
+  const r = 40 + rand() * 60;
+  const th = rand() * Math.PI * 2, ph = Math.acos(2 * rand() - 1);
+  sPos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+  sPos[i * 3 + 1] = Math.abs(r * Math.cos(ph)) - 5;
+  sPos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
+  size: 0.25, map: DOT, color: 0xcfc4ff, transparent: true, opacity: 0.7,
+  depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+}));
+scene.add(stars);
+
+// ground
+const grid = new THREE.PolarGridHelper(14, 24, 10, 64, 0x7a4cff, 0x2a1a4a);
+grid.position.y = -2.4;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+const ring = new THREE.Mesh(
+  new THREE.RingGeometry(2.0, 2.08, 96),
+  new THREE.MeshBasicMaterial({ color: 0xff6fb5, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+);
+ring.rotation.x = -Math.PI / 2;
+ring.position.y = -2.38;
+scene.add(ring);
+const ring2 = ring.clone();
+ring2.material = ring.material.clone();
+ring2.material.color.set(0x6fffd2);
+ring2.scale.setScalar(1.9);
+scene.add(ring2);
+
+// orbiting shapes
+const orbiters = [
+  { geo: new THREE.IcosahedronGeometry(0.45, 0), color: 0xb07cff, r: 5.2, y: 2.4, speed: 0.22, phase: 0 },
+  { geo: new THREE.TorusKnotGeometry(0.3, 0.1, 80, 10), color: 0x6fffd2, r: 6.0, y: 0.6, speed: -0.16, phase: 2.1 },
+  { geo: new THREE.OctahedronGeometry(0.42, 0), color: 0xffb36f, r: 4.6, y: 4.2, speed: 0.12, phase: 4.2 },
+].map(o => {
+  const m = new THREE.Mesh(o.geo, new THREE.MeshBasicMaterial({ color: o.color, wireframe: true }));
+  scene.add(m);
+  return { ...o, mesh: m };
+});
+
+// market mood: the inner ring and crown light turn mint on an up day, pink on a down day
+const MINT = new THREE.Color(0x6fffd2), PINK = new THREE.Color(0xff6fb5);
+const moodTarget = PINK.clone();
+addEventListener('market:mood', e => { if (e.detail != null) moodTarget.copy(e.detail >= 0 ? MINT : PINK); });
+
+// post-processing
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.55, 0.2));
+composer.addPass(new OutputPass());
+
+// camera: the home view, with the tree shifted left so the panel has the right side
+const BASE = new THREE.Vector3(0, 1.0, 10.5), LOOK = new THREE.Vector3(0, 1.6, 0);
+const mouse = new THREE.Vector2();
+addEventListener('pointermove', e => {
+  mouse.x = (e.clientX / innerWidth) * 2 - 1;
+  mouse.y = (e.clientY / innerHeight) * 2 - 1;
+});
+function onResize() {
+  const w = innerWidth, h = innerHeight;
+  camera.aspect = w / h;
+  if (w > h) camera.setViewOffset(w, h, w * 0.14, 0, w, h); else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  composer.setSize(w, h);
+}
+addEventListener('resize', onResize);
+onResize();
+
+const clock = new THREE.Clock();
+const tmp = new THREE.Vector3(), cur = BASE.clone();
+let running = true, last = 0;
+document.addEventListener('visibilitychange', () => {
+  running = !document.hidden;
+  if (running) { clock.getDelta(); requestAnimationFrame(tick); }
+});
+
+function tick(now) {
+  if (!running) return;
+  requestAnimationFrame(tick);
+  if (now - last < 1000 / FPS - 2) return;   // frame cap keeps GPU use low
+  last = now;
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  tree.rotation.y += dt * 0.06;
+
+  for (let i = 0; i < bloomCount; i++) {
+    const s = 1 + Math.sin(t * 1.4 + i * 0.37) * 0.035;
+    bPos[i * 3] = bBase[i * 3] * s;
+    bPos[i * 3 + 1] = bBase[i * 3 + 1] + Math.sin(t * 2 + i) * 0.02;
+    bPos[i * 3 + 2] = bBase[i * 3 + 2] * s;
+  }
+  bloomGeo.attributes.position.needsUpdate = true;
+  bloomMat.size = 0.1 + Math.sin(t * 1.2) * 0.012;
+
+  for (let i = 0; i < PETALS; i++) {
+    pPos[i * 3 + 1] -= pVel[i * 2] * dt;
+    pPos[i * 3] += Math.sin(t * 0.8 + pVel[i * 2 + 1]) * dt * 0.25;
+    pPos[i * 3 + 2] += Math.cos(t * 0.6 + pVel[i * 2 + 1]) * dt * 0.18;
+    if (pPos[i * 3 + 1] < -2.4) resetPetal(i, false);
+  }
+  petalGeo.attributes.position.needsUpdate = true;
+
+  stars.rotation.y += dt * 0.004;
+
+  for (const o of orbiters) {
+    const a = t * o.speed + o.phase;
+    o.mesh.position.set(Math.cos(a) * o.r, o.y + Math.sin(t * 0.9 + o.phase) * 0.35, Math.sin(a) * o.r);
+    o.mesh.rotation.x += dt * 0.5;
+    o.mesh.rotation.y += dt * 0.7;
+  }
+
+  const pulse = (Math.sin(t * 1.5) + 1) / 2;
+  ring.material.opacity = 0.4 + pulse * 0.5;
+  ring2.material.opacity = 0.2 + (1 - pulse) * 0.4;
+  ring.material.color.lerp(moodTarget, dt * 0.8);
+  crown.color.lerp(moodTarget, dt * 0.4);
+  crown.intensity = 34 + pulse * 14;
+
+  // slow drift + mouse parallax
+  const narrow = camera.aspect < 0.9 ? 1.9 : 1;
+  tmp.copy(BASE).multiplyScalar(narrow);
+  tmp.x += Math.sin(t * 0.05) * 1.4 + mouse.x * 0.8;
+  tmp.y += Math.sin(t * 0.037) * 0.5 - mouse.y * 0.5;
+  cur.lerp(tmp, 1 - Math.pow(0.04, dt));
+  camera.position.copy(cur);
+  camera.lookAt(LOOK);
+
+  composer.render();
+}
+requestAnimationFrame(tick);
+document.body.classList.add('scene-ready');
+</script>
+</body>
+</html>
