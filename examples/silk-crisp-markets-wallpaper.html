@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oakbloom Silk Crisp Markets Wallpaper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03041a;
+  --text: #eef0ff;
+  --muted: #a9b0de;
+  --accent: #8fa8ff;
+  --glass: rgba(8, 12, 46, 0.42);
+  --line: rgba(170, 180, 255, 0.16);
+  --up: #74f0c8;
+  --down: #ff86a8;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+/* 1rem = 16px on a 1080p screen, and scales with the screen height (1440p, 4K) */
+html { font-size: calc(100vh / 67.5); }
+body {
+  margin: 0; height: 100vh; overflow: hidden;
+  background: linear-gradient(180deg, #03041a 0%, #1a1380 55%, #0a1a8a 100%);
+  color: var(--text);
+  font: 400 1rem/1.4 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none; cursor: default;
+}
+#silk { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ---------- market panel ---------- */
+.panel {
+  position: fixed; top: 2.5rem; right: 2.5rem; bottom: 5rem; /* room for the taskbar */
+  width: 29rem; display: flex; flex-direction: column; gap: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.card {
+  background: var(--glass); border: 1px solid var(--line); border-radius: 1.25rem;
+  backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  box-shadow: 0 1.2rem 3rem rgba(2, 4, 30, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 1.1rem 1.3rem;
+}
+.head { display: flex; align-items: center; gap: 0.7rem; padding: 0 0.3rem; }
+.brand-mark {
+  width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  background: conic-gradient(from 200deg, #5b6cff, #a58bff, #7fd4ff, #5b6cff);
+  box-shadow: 0 0 1.4rem rgba(120, 140, 255, 0.6);
+  animation: spin 12s linear infinite;
+}
+.brand { font: 500 1.25rem "Space Grotesk", system-ui, sans-serif; letter-spacing: -0.03em; }
+.brand b { font-weight: 700; background: linear-gradient(90deg, #9fb2ff, #c9b8ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.clock { margin-left: auto; text-align: right; line-height: 1.15; }
+.clock .time { font: 600 1.5rem "Space Grotesk", system-ui, sans-serif; letter-spacing: -0.02em; }
+.clock .date { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+
+.label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; }
+.dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--muted); }
+.dot.open { background: var(--up); box-shadow: 0 0 0.8rem var(--up); animation: blink 2s ease-in-out infinite; }
+.status { margin-left: auto; letter-spacing: 0.1em; }
+
+.hero .value { font: 700 3.4rem/1.05 "Space Grotesk", system-ui, sans-serif; letter-spacing: -0.03em; margin-top: 0.35rem; }
+.hero .chg { font-size: 1.05rem; font-weight: 600; margin-top: 0.15rem; }
+.hero svg { width: 100%; height: 4.2rem; margin-top: 0.6rem; display: block; }
+
+.up { color: var(--up); }
+.down { color: var(--down); }
+.flat { color: var(--muted); }
+
+.list { padding: 0.5rem 1.3rem; flex: 0 1 auto; }
+.row { display: grid; grid-template-columns: 4.1rem 5.2rem 1fr 5.2rem 5.3rem; align-items: center; gap: 0.5rem; padding: 0.52rem 0; }
+.row + .row { border-top: 1px solid rgba(170, 180, 255, 0.08); }
+.row .sym { font: 600 1.05rem "Space Grotesk", system-ui, sans-serif; }
+.row .name { font-size: 0.8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row svg { width: 100%; height: 1.6rem; display: block; }
+.row .price { text-align: right; font-weight: 500; }
+.pill { justify-self: end; font-size: 0.82rem; font-weight: 600; padding: 0.16rem 0.5rem; border-radius: 99px; background: rgba(170, 180, 255, 0.08); white-space: nowrap; }
+
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.mini .value { font: 700 1.75rem/1.1 "Space Grotesk", system-ui, sans-serif; letter-spacing: -0.02em; margin-top: 0.3rem; }
+.mini .chg { font-size: 0.85rem; font-weight: 600; }
+.mini svg { width: 100%; height: 2rem; margin-top: 0.4rem; display: block; }
+.mini .ico { font-size: 0.95rem; color: #c9b8ff; }
+
+.foot { font-size: 0.7rem; color: var(--muted); padding: 0 0.3rem; display: flex; justify-content: space-between; gap: 1rem; opacity: 0.85; }
+.foot .stale { color: #ffc08a; }
+
+.value, .price { transition: text-shadow 1.2s, color 1.2s; }
+.tick-up { color: var(--up); text-shadow: 0 0 1rem rgba(116, 240, 200, 0.7); }
+.tick-down { color: var(--down); text-shadow: 0 0 1rem rgba(255, 134, 168, 0.7); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink { 50% { opacity: 0.35; } }
+
+/* portrait / very narrow screens: panel goes along the bottom */
+@media (max-aspect-ratio: 1/1) {
+  .panel { top: auto; left: 1.5rem; right: 1.5rem; width: auto; }
+}
+</style>
+</head>
+<body>
+<canvas id="silk"></canvas>
+
+<aside class="panel">
+  <div class="head">
+    <span class="brand-mark"></span>
+    <span class="brand"><b>oak</b>bloom</span>
+    <div class="clock"><div class="time" id="time">--:--</div><div class="date" id="date"></div></div>
+  </div>
+
+  <div class="card hero" data-sym="^GSPC">
+    <div class="label"><span class="dot" id="mktDot"></span>S&amp;P 500 <span class="status" id="mktStatus"></span></div>
+    <div class="value">—</div>
+    <div class="chg flat">&nbsp;</div>
+    <svg viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card list" id="mag7"></div>
+
+  <div class="pair">
+    <div class="card mini" data-sym="BTC-USD">
+      <div class="label"><span class="ico">₿</span>Bitcoin</div>
+      <div class="value">—</div>
+      <div class="chg flat">&nbsp;</div>
+      <svg viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="card mini" data-sym="GC=F">
+      <div class="label"><span class="ico">◆</span>Gold / oz</div>
+      <div class="value">—</div>
+      <div class="chg flat">&nbsp;</div>
+      <svg viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="foot"><span id="updated">Loading prices…</span><span>Yahoo Finance · Binance</span></div>
+</aside>
+
+<!-- ======================= market data (same as the Oakbloom markets wallpaper) ======================= -->
+<script>
+(() => {
+  const STOCK_REFRESH = 60_000;   // S&P, Mag 7, gold
+  const BTC_REFRESH = 15_000;
+
+  const MAG7 = [
+    ['AAPL', 'Apple'], ['MSFT', 'Microsoft'], ['GOOGL', 'Alphabet'], ['AMZN', 'Amazon'],
+    ['NVDA', 'Nvidia'], ['META', 'Meta'], ['TSLA', 'Tesla'],
+  ];
+  const YAHOO_SYMS = ['^GSPC', ...MAG7.map(m => m[0]), 'GC=F', 'BTC-USD'];
+
+  const $ = id => document.getElementById(id);
+  const esc = s => (window.CSS && CSS.escape) ? CSS.escape(s) : s;
+  const state = {};
+  let lastStockOk = 0, sp = null;
+
+  $('mag7').innerHTML = MAG7.map(([s, n]) => `
+    <div class="row" data-sym="${s}">
+      <span class="sym">${s}</span><span class="name">${n}</span>
+      <svg viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+      <span class="price value">—</span><span class="pill chg flat">—</span>
+    </div>`).join('');
+
+  const fmt = (v, d) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtPrice = (sym, v) => sym === 'BTC-USD' ? '$' + fmt(v, 0) : sym === '^GSPC' ? fmt(v, 2) : '$' + fmt(v, 2);
+  const dir = pct => pct > 0.005 ? 'up' : pct < -0.005 ? 'down' : 'flat';
+  const arrow = pct => pct > 0.005 ? '▲' : pct < -0.005 ? '▼' : '•';
+
+  function sparkline(svg, pts, prev, cls) {
+    pts = (pts || []).filter(v => v != null && isFinite(v));
+    if (pts.length < 2) { svg.innerHTML = ''; return; }
+    let lo = Math.min(...pts), hi = Math.max(...pts);
+    if (prev != null) { lo = Math.min(lo, prev); hi = Math.max(hi, prev); }
+    const span = (hi - lo) || 1, W = 300, H = 60, pad = 4;
+    const x = i => (i / (pts.length - 1)) * W;
+    const y = v => H - pad - ((v - lo) / span) * (H - pad * 2);
+    const line = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const col = cls === 'up' ? '#74f0c8' : cls === 'down' ? '#ff86a8' : '#a9b0de';
+    const id = 'g' + Math.random().toString(36).slice(2, 8);
+    svg.innerHTML = `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${col}" stop-opacity=".35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/>
+      </linearGradient></defs>
+      ${prev != null ? `<line x1="0" x2="${W}" y1="${y(prev).toFixed(1)}" y2="${y(prev).toFixed(1)}" stroke="rgba(200,210,255,.28)" stroke-width="1" stroke-dasharray="3 5" vector-effect="non-scaling-stroke"/>` : ''}
+      <polygon points="0,${H} ${line} ${W},${H}" fill="url(#${id})"/>
+      <polyline points="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+  }
+
+  function render(sym) {
+    const d = state[sym], el = document.querySelector(`[data-sym="${esc(sym)}"]`);
+    if (!d || !el || d.price == null) return;
+    const valueEl = el.querySelector('.value'), chgEl = el.querySelector('.chg');
+    const text = fmtPrice(sym, d.price);
+    if (valueEl.textContent !== text) {
+      const old = valueEl.dataset.v ? +valueEl.dataset.v : null;
+      valueEl.textContent = text; valueEl.dataset.v = d.price;
+      if (old != null && old !== d.price) {
+        const c = d.price > old ? 'tick-up' : 'tick-down';
+        valueEl.classList.add(c); setTimeout(() => valueEl.classList.remove(c), 1400);
+      }
+    }
+    if (d.pct != null) {
+      const cls = dir(d.pct), sign = d.pct > 0 ? '+' : '';
+      const pctTxt = `${arrow(d.pct)} ${sign}${d.pct.toFixed(2)}%`;
+      const abs = d.prev != null ? d.price - d.prev : null;
+      chgEl.textContent = (el.classList.contains('hero') && abs != null)
+        ? `${pctTxt}  ·  ${abs > 0 ? '+' : ''}${fmt(abs, 2)} pts`
+        : (el.classList.contains('mini') && sym === 'BTC-USD') ? pctTxt + ' · 24h' : pctTxt;
+      chgEl.className = chgEl.className.replace(/\b(up|down|flat)\b/g, '').trim() + ' ' + cls;
+      sparkline(el.querySelector('svg'), d.spark, sym === 'BTC-USD' ? null : d.prev, cls);
+    }
+    if (sym === '^GSPC') window.dispatchEvent(new CustomEvent('market:mood', { detail: d.pct }));
+  }
+  const renderAll = () => Object.keys(state).forEach(render);
+
+  function save() { try { localStorage.setItem('oakbloom-silk-crisp-wallpaper', JSON.stringify({ t: lastStockOk, state })); } catch (e) {} }
+  try {
+    const c = JSON.parse(localStorage.getItem('oakbloom-silk-crisp-wallpaper') || 'null');
+    if (c && c.state) { Object.assign(state, c.state); lastStockOk = c.t || 0; renderAll(); }
+  } catch (e) {}
+
+  async function get(url, ms = 15000) {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
+    try {
+      const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.text();
+    } finally { clearTimeout(timer); }
+  }
+  // Yahoo blocks direct browser calls (CORS), so the request goes through the r.jina.ai reader.
+  function yahooUrl() {
+    return 'https://query1.finance.yahoo.com/v7/finance/spark?symbols=' +
+      YAHOO_SYMS.map(encodeURIComponent).join(',') + '&range=1d&interval=15m&_=' + Date.now();
+  }
+  const STOCK_SOURCES = [
+    () => get('https://r.jina.ai/' + yahooUrl()),
+    () => get(yahooUrl(), 6000),
+  ];
+  function parseYahoo(text) {
+    const a = text.indexOf('{"spark"'), b = text.lastIndexOf('}');
+    if (a < 0) throw new Error('no data');
+    const j = JSON.parse(text.slice(a, b + 1));
+    let n = 0;
+    for (const item of j.spark.result) {
+      const resp = item.response && item.response[0]; if (!resp) continue;
+      const m = resp.meta, price = m.regularMarketPrice, prev = m.previousClose ?? m.chartPreviousClose;
+      if (price == null) continue;
+      const close = (resp.indicators?.quote?.[0]?.close || []).filter(v => v != null);
+      const cur = state[item.symbol] || {};
+      if (item.symbol === 'BTC-USD' && cur.live) { cur.spark = close; state[item.symbol] = cur; continue; }
+      state[item.symbol] = { price, prev, pct: prev ? (price / prev - 1) * 100 : null, spark: close };
+      if (item.symbol === '^GSPC') sp = m.currentTradingPeriod && m.currentTradingPeriod.regular;
+      n++;
+    }
+    if (!n) throw new Error('empty');
+  }
+
+  let srcIdx = 0;
+  async function refreshStocks() {
+    let ok = false;
+    for (let i = 0; i < STOCK_SOURCES.length && !ok; i++) {
+      const k = (srcIdx + i) % STOCK_SOURCES.length;
+      try { parseYahoo(await STOCK_SOURCES[k]()); srcIdx = k; ok = true; } catch (e) {}
+    }
+    if (!ok) {
+      try {
+        const g = JSON.parse(await get('https://api.gold-api.com/price/XAU'));
+        if (g.price) { const c = state['GC=F'] || {}; state['GC=F'] = { ...c, price: g.price, pct: c.prev ? (g.price / c.prev - 1) * 100 : c.pct }; }
+      } catch (e) {}
+    }
+    if (ok) { lastStockOk = Date.now(); save(); }
+    renderAll(); status();
+  }
+  async function refreshBtc() {
+    try {
+      const t = JSON.parse(await get('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT', 8000));
+      const c = state['BTC-USD'] || {};
+      state['BTC-USD'] = { ...c, price: +t.lastPrice, prev: +t.openPrice, pct: +t.priceChangePercent, live: true };
+    } catch (e) {
+      try {
+        const t = JSON.parse(await get('https://api.coinbase.com/v2/prices/BTC-USD/spot', 8000));
+        const c = state['BTC-USD'] || {};
+        state['BTC-USD'] = { ...c, price: +t.data.amount, live: true };
+      } catch (e2) {}
+    }
+    render('BTC-USD');
+  }
+
+  function status() {
+    const now = Date.now() / 1000;
+    let open;
+    if (sp && sp.start && now < sp.end + 86400) open = now >= sp.start && now < sp.end;
+    else {
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()).map(x => [x.type, x.value]));
+      const mins = (+p.hour % 24) * 60 + +p.minute;
+      open = !['Sat', 'Sun'].includes(p.weekday) && mins >= 570 && mins < 960;
+    }
+    $('mktDot').classList.toggle('open', open);
+    $('mktStatus').textContent = open ? 'Market open' : 'Market closed';
+    const u = $('updated');
+    if (!lastStockOk) { u.textContent = 'Waiting for prices…'; return; }
+    const age = Date.now() - lastStockOk;
+    const hhmm = new Date(lastStockOk).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    u.textContent = (age > 5 * 60_000 ? 'Offline · last update ' : 'Updated ') + hhmm;
+    u.classList.toggle('stale', age > 5 * 60_000);
+  }
+  function clock() {
+    const d = new Date();
+    $('time').textContent = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    $('date').textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  clock(); status();
+  setInterval(() => { clock(); status(); }, 5000);
+  refreshStocks(); setInterval(refreshStocks, STOCK_REFRESH);
+  refreshBtc(); setInterval(refreshBtc, BTC_REFRESH);
+})();
+</script>
+
+<!-- ======================= animated silk, crisp edges (WebGL shader, no libraries) ======================= -->
+<script id="frag" type="x-shader/x-fragment">
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uMood;      // -1 = down day (more violet), +1 = up day (more cyan)
+uniform float uPanel;     // 1 when the market panel sits on the right
+
+// "hash without sine": stays precise for large inputs (no stripes in the grain)
+float hash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+
+// ---- motion shared by every sheet, as in Velvet: one slow sway that neighbours follow together,
+//      a smaller ripple running along the edge, and a gentle drift up and down ----
+float sway(float x, float t, float k) {
+  return (0.014 + 0.010 * x) * sin(x * 2.6 + t * 0.9 + k * 0.55)
+       + 0.005 * sin(x * 6.5 - t * 1.15 + k * 1.7)
+       + 0.010 * sin(t * 0.45 + k * 1.1);
+}
+
+// ---- the silk sheets: each is a curve y = f(x); everything below the curve is fabric ----
+float sheetMain(float x, float t) {      // the big sheet rising from bottom-left to top-right
+  float rise = smoothstep(-0.05, 1.05, x);
+  return 0.30 + 0.53 * rise * rise * (3.0 - 2.0 * rise) + sway(x, t, 1.0);
+}
+float sheetBack(float x, float t) {      // soft hill far behind, on the left
+  float h = (x - 0.12) * 3.2;
+  return 0.47 + 0.07 * exp(-h * h) - 0.12 * smoothstep(0.2, 0.7, x) + 0.7 * sway(x, t, 0.0);
+}
+float sheetMid(float x, float t) {       // the darker blue mass under the main sheet
+  return 0.24 + 0.33 * smoothstep(0.25, 1.0, x) + sway(x, t, 2.0);
+}
+float sheetFront(float x, float t) {     // soft lavender bulge at the bottom-left
+  float h = (x - 0.22) * 4.0;
+  return 0.16 + 0.03 * sin(x * 3.4 + 2.0) - 0.08 * x + 0.04 * exp(-h * h) + 0.6 * sway(x, t, 3.0);
+}
+
+// distance from the edge measured across the curve (in screen heights), so a line has the same
+// width on steep and flat parts; < 0 inside the fabric
+float edgeDist(float y, float f, float s, float asp) { return (y - f) / sqrt(1.0 + s * s / (asp * asp)); }
+
+// glowing rim along an edge (thin bright line + soft halo), with a slow glint travelling along it
+vec3 rim(float d, float x, float t, float k, vec3 rc, float amt, float soft) {
+  float glint = 0.75 + 0.35 * sin(x * 9.0 - t * 1.6 + k * 2.3);
+  float ad = abs(d);
+  if (ad > 0.25) return vec3(0.0);                                       // too far away to light anything
+  float a = exp(-ad / (0.0016 * soft)) * 0.85 + exp(-ad / (0.009 * soft)) * 0.22 + exp(-ad / 0.04) * 0.05;
+  return rc * a * amt * glint;
+}
+
+// draws one sheet onto col; blur is the edge softness in screen heights
+void sheet(inout vec3 col, float d, float slope, float blur, float depth, vec3 deep, vec3 lit, float ripples, float x, float t) {
+  float mask = 1.0 - smoothstep(-blur, blur, d);
+  if (mask <= 0.0) return;
+  float inside = max(-d, 0.0);
+  // light comes from the upper left: faces tilting toward it are brighter
+  float shade = clamp(0.55 + 0.9 * slope, 0.0, 1.0);
+  shade *= mix(1.0, 0.35, smoothstep(0.0, 0.42, inside));       // darker deeper below the crest
+  // silky ridges running along the crest
+  float rip = (sin(inside * 70.0 - x * 6.0 + t * 0.8) * exp(-inside * 10.0)
+             + 0.6 * sin(inside * 31.0 + x * 3.0 - t * 0.5) * exp(-inside * 5.0)) * ripples;
+  vec3 c = mix(deep, lit, clamp(shade + rip, 0.0, 1.0));
+  // soft broad sheen a little below the edge
+  float sh = (inside - 0.06) * 14.0;
+  c += lit * 0.35 * exp(-sh * sh) * depth;
+  col = mix(col, c, mask);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float x = uv.x, y = uv.y;
+  float asp = uRes.x / uRes.y;
+  float t = uTime * 0.16;                                     // slow, calm motion
+  float mood = clamp(uMood, -1.0, 1.0);
+  float px = 1.2 / uRes.y;                                    // anti-alias width
+
+  vec3 rcV = vec3(0.62, 0.66, 1.0), rcB = vec3(0.55, 0.64, 1.0);
+  float e = 0.002;
+
+  // crisp: every edge is sharp with its own glowing line, as in Velvet
+  const float bBack = 0.0, bMid = 0.0, bFront = 0.0;          // edge blur of each sheet
+  const float rBack = 0.45, rMid = 0.75, rFront = 0.5, softBack = 1.6, softFront = 1.3;
+
+  // ---- where every edge is (cheap), so layers hidden under an opaque one are never shaded ----
+  float fB = sheetBack(x, t),  sB = (sheetBack(x + e, t) - fB) / e,  dB = edgeDist(y, fB, sB, asp);
+  float fM = sheetMain(x, t),  sM = (sheetMain(x + e, t) - fM) / e,  dM = edgeDist(y, fM, sM, asp);
+  float fD = sheetMid(x, t),   sD = (sheetMid(x + e, t) - fD) / e,   dD = edgeDist(y, fD, sD, asp);
+  float fF = sheetFront(x, t), sF = (sheetFront(x + e, t) - fF) / e, dF = edgeDist(y, fF, sF, asp);
+  vec2 q = (uv - vec2(1.08 + 0.01 * sin(t * 0.5), -0.28)) * vec2(asp, 1.0);
+  float dd = length(q * vec2(1.0, 0.92)) - (0.62 + 0.012 * sin(t * 0.8));
+  float bB = max(bBack, px), bD = max(bMid, px), bF = max(bFront, px), bDune = px * 1.5;
+  int top = dd < -bDune ? 5 : dF < -bF ? 4 : dD < -bD ? 3 : dM < -px ? 2 : dB < -bB ? 1 : 0;
+
+  vec3 col = vec3(0.0);
+  vec3 litB = mix(vec3(0.11, 0.24, 1.0), vec3(0.06, 0.32, 1.0), 0.5 + 0.5 * mood);
+  if (top == 0) {
+    // ---- sky: near-black navy at the top, violet glow on the horizon ----
+    vec3 navy = vec3(0.010, 0.012, 0.075);
+    vec3 violet = mix(vec3(0.22, 0.09, 0.74), vec3(0.14, 0.14, 0.80), 0.5 + 0.5 * mood);
+    vec3 lav = mix(vec3(0.40, 0.30, 0.80), vec3(0.32, 0.38, 0.86), 0.5 + 0.5 * mood);
+    float glowY = 0.50 + 0.015 * sin(t * 0.7);
+    col = mix(lav, violet, smoothstep(glowY - 0.08, glowY + 0.14, y));
+    col = mix(col, navy, smoothstep(glowY + 0.08, 0.98, y));
+    float gy = (y - glowY) * 6.0;
+    col += vec3(0.10, 0.05, 0.22) * exp(-gy * gy) * (0.8 + 0.2 * sin(t));
+  }
+  if (top <= 1) {  // far hill
+    sheet(col, dB, -sB, bB, 0.05, vec3(0.03, 0.10, 0.62), vec3(0.20, 0.34, 0.98), 0.0, x, t);
+    col += rim(dB, x, t, 0.0, rcV, rBack, softBack);
+  }
+  if (top <= 2) {  // main sheet
+    vec3 deepB = mix(vec3(0.0, 0.03, 0.40), vec3(0.0, 0.06, 0.42), 0.5 + 0.5 * mood);
+    sheet(col, dM, -sM * 0.35, px, 0.9, deepB, litB, 0.10, x, t);
+    col += rim(dM, x, t, 1.0, rcV, 1.05, 1.0);
+  }
+  if (top <= 3) {  // mass under the sheet
+    sheet(col, dD, -sD * 0.5 + 0.15, bD, 0.35, vec3(0.0, 0.02, 0.20), vec3(0.10, 0.24, 0.92), 0.03, x, t);
+    col += rim(dD, x, t, 2.0, rcB, rMid, 1.0);
+    // soft out-of-focus glow in the middle of the blue mass
+    float under = 1.0 - smoothstep(-0.03, 0.03, dD);
+    vec2 gp = (uv - vec2(0.56 + 0.03 * sin(t * 0.6), 0.34 + 0.02 * cos(t * 0.5))) * vec2(1.6, 2.6);
+    col += vec3(0.07, 0.15, 0.50) * exp(-dot(gp, gp) * 6.0) * under;
+  }
+  if (top <= 4) {  // front-left bulge
+    sheet(col, dF, sF * 0.6 + 0.2, bF, 0.12, vec3(0.01, 0.02, 0.14), vec3(0.20, 0.26, 0.72), 0.0, x, t);
+    col += rim(dF, x, t, 3.0, rcB * vec3(0.9, 0.85, 0.95), rFront, softFront);
+  }
+
+  // ---- matte dune in the bottom-right corner, with fine grain ----
+  float lightD = clamp(dot(normalize(q), vec2(-0.751, 0.660)), 0.0, 1.0);
+  float dm = 1.0 - smoothstep(-bDune, bDune, dd);
+  if (dm > 0.0) {
+    float grain = hash(floor(gl_FragCoord.xy));                               // fine static grain, no fbm
+    vec3 duneC = mix(vec3(0.04, 0.06, 0.26), vec3(0.46, 0.52, 0.80), lightD * sqrt(lightD));
+    duneC *= 0.92 + 0.16 * grain;
+    col = mix(col, duneC, dm);
+  }
+  col += rim(dd, uv.y, t, 5.0, vec3(0.62, 0.66, 0.95), 0.45, 1.0) * min(lightD + 0.2, 1.0);
+
+  // vignette + film grain
+  vec2 v = uv - 0.5;
+  col *= 1.0 - 0.45 * dot(v, v);
+  col += (hash(gl_FragCoord.xy + fract(uTime) * 100.0) - 0.5) * 0.022;
+  gl_FragColor = vec4(pow(max(col, 0.0), vec3(0.95)), 1.0);
+}
+</script>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const FPS = Math.max(10, Math.min(60, +params.get('fps') || 30));   // ?fps=60 for smoother motion
+  const canvas = document.getElementById('silk');
+  const gl = canvas.getContext('webgl', { antialias: false, premultipliedAlpha: false });
+  if (!gl) return;   // CSS gradient background stays as a fallback
+
+  function shader(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, shader(gl.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }'));
+  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, document.getElementById('frag').textContent));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'p');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const uRes = gl.getUniformLocation(prog, 'uRes'), uTime = gl.getUniformLocation(prog, 'uTime');
+  const uMood = gl.getUniformLocation(prog, 'uMood'), uPanel = gl.getUniformLocation(prog, 'uPanel');
+
+  // the S&P 500's day nudges the colours: up = cooler cyan-blue, down = deeper violet
+  let mood = 0, moodTarget = 0;
+  addEventListener('market:mood', e => { if (e.detail != null) moodTarget = Math.max(-1, Math.min(1, e.detail / 1.5)); });
+
+  function resize() {
+    const s = Math.min(devicePixelRatio || 1, 1.25);
+    canvas.width = Math.round(innerWidth * s);
+    canvas.height = Math.round(innerHeight * s);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  const start = performance.now();
+  let last = 0, running = true;
+  document.addEventListener('visibilitychange', () => { running = !document.hidden; if (running) requestAnimationFrame(frame); });
+  function frame(now) {
+    if (!running) return;
+    requestAnimationFrame(frame);
+    if (now - last < 1000 / FPS - 2) return;   // frame cap keeps GPU use low
+    last = now;
+    mood += (moodTarget - mood) * 0.01;
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uTime, (now - start) / 1000);
+    gl.uniform1f(uMood, mood);
+    gl.uniform1f(uPanel, innerWidth > innerHeight ? 1 : 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

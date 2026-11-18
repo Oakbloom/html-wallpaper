@@ -328,37 +328,47 @@ uniform float uPanel;     // 1 when the market panel sits on the right
 
 // "hash without sine": stays precise for large inputs (no stripes in the grain)
 float hash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
-float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
+
+// ---- motion shared by every sheet, as in Velvet: one slow sway that neighbours follow together,
+//      a smaller ripple running along the edge, and a gentle drift up and down ----
+float sway(float x, float t, float k) {
+  return (0.014 + 0.010 * x) * sin(x * 2.6 + t * 0.9 + k * 0.55)
+       + 0.005 * sin(x * 6.5 - t * 1.15 + k * 1.7)
+       + 0.010 * sin(t * 0.45 + k * 1.1);
 }
-float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
 
 // ---- the silk sheets: each is a curve y = f(x); everything below the curve is fabric ----
 float sheetMain(float x, float t) {      // the big sheet rising from bottom-left to top-right
   float rise = smoothstep(-0.05, 1.05, x);
-  return 0.30 + 0.53 * rise * rise * (3.0 - 2.0 * rise)
-       + 0.035 * sin(x * 5.0 + t * 0.9)
-       + 0.018 * sin(x * 11.0 - t * 1.3 + 1.7)
-       + 0.012 * (fbm(vec2(x * 3.0, t * 0.15)) - 0.5);
+  return 0.30 + 0.53 * rise * rise * (3.0 - 2.0 * rise) + sway(x, t, 1.0);
 }
 float sheetBack(float x, float t) {      // soft hill far behind, on the left
-  return 0.47 + 0.07 * exp(-pow((x - 0.12 - 0.03 * sin(t * 0.3)) * 3.2, 2.0))
-       - 0.12 * smoothstep(0.2, 0.7, x) + 0.012 * sin(x * 7.0 + t * 0.6);
+  float h = (x - 0.12) * 3.2;
+  return 0.47 + 0.07 * exp(-h * h) - 0.12 * smoothstep(0.2, 0.7, x) + 0.7 * sway(x, t, 0.0);
 }
 float sheetMid(float x, float t) {       // the darker blue mass under the main sheet
-  return 0.24 + 0.33 * smoothstep(0.25, 1.0, x)
-       + 0.03 * sin(x * 4.0 - t * 0.7 + 0.5) + 0.02 * sin(x * 9.0 + t * 0.5);
+  return 0.24 + 0.33 * smoothstep(0.25, 1.0, x) + sway(x, t, 2.0);
 }
 float sheetFront(float x, float t) {     // soft lavender bulge at the bottom-left
-  return 0.16 + 0.05 * sin(x * 3.4 + t * 0.45 + 2.0) - 0.08 * x + 0.04 * exp(-pow((x - 0.22) * 4.0, 2.0));
+  float h = (x - 0.22) * 4.0;
+  return 0.16 + 0.03 * sin(x * 3.4 + 2.0) - 0.08 * x + 0.04 * exp(-h * h) + 0.6 * sway(x, t, 3.0);
 }
 
-// draws one sheet onto col; depth 0 = far & blurry, 1 = near & sharp
-void sheet(inout vec3 col, vec2 uv, float f, float slope, float depth, vec3 deep, vec3 lit, float rimAmt, float ripples, float t) {
-  float d = uv.y - f;                               // < 0 inside the fabric
-  float blur = mix(0.045, 0.0025, depth);
+// distance from the edge measured across the curve (in screen heights), so a line has the same
+// width on steep and flat parts; < 0 inside the fabric
+float edgeDist(float y, float f, float s, float asp) { return (y - f) / sqrt(1.0 + s * s / (asp * asp)); }
+
+// glowing rim along an edge (thin bright line + soft halo), with a slow glint travelling along it
+vec3 rim(float d, float x, float t, float k, vec3 rc, float amt, float soft) {
+  float glint = 0.75 + 0.35 * sin(x * 9.0 - t * 1.6 + k * 2.3);
+  float ad = abs(d);
+  if (ad > 0.25) return vec3(0.0);                                       // too far away to light anything
+  float a = exp(-ad / (0.0016 * soft)) * 0.85 + exp(-ad / (0.009 * soft)) * 0.22 + exp(-ad / 0.04) * 0.05;
+  return rc * a * amt * glint;
+}
+
+// draws one sheet onto col; blur is the edge softness in screen heights
+void sheet(inout vec3 col, float d, float slope, float blur, float depth, vec3 deep, vec3 lit, float ripples, float x, float t) {
   float mask = 1.0 - smoothstep(-blur, blur, d);
   if (mask <= 0.0) return;
   float inside = max(-d, 0.0);
@@ -366,72 +376,88 @@ void sheet(inout vec3 col, vec2 uv, float f, float slope, float depth, vec3 deep
   float shade = clamp(0.55 + 0.9 * slope, 0.0, 1.0);
   shade *= mix(1.0, 0.35, smoothstep(0.0, 0.42, inside));       // darker deeper below the crest
   // silky ridges running along the crest
-  float rip = sin(inside * 70.0 - uv.x * 6.0 + t * 0.8) * exp(-inside * 10.0) * ripples;
-  rip += sin(inside * 31.0 + uv.x * 3.0 - t * 0.5) * exp(-inside * 5.0) * ripples * 0.6;
+  float rip = (sin(inside * 70.0 - x * 6.0 + t * 0.8) * exp(-inside * 10.0)
+             + 0.6 * sin(inside * 31.0 + x * 3.0 - t * 0.5) * exp(-inside * 5.0)) * ripples;
   vec3 c = mix(deep, lit, clamp(shade + rip, 0.0, 1.0));
   // soft broad sheen a little below the edge
-  c += lit * 0.35 * exp(-pow((inside - 0.06) * 14.0, 2.0)) * depth;
+  float sh = (inside - 0.06) * 14.0;
+  c += lit * 0.35 * exp(-sh * sh) * depth;
   col = mix(col, c, mask);
-  // thin bright rim light along the edge (stronger where the sheet faces the light)
-  float rim = exp(-abs(d) / (blur * 0.7 + 0.0018)) * rimAmt * (0.55 + 0.45 * clamp(slope * 2.0 + 0.5, 0.0, 1.0));
-  col += vec3(0.62, 0.68, 1.0) * rim;
 }
 
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
+  float x = uv.x, y = uv.y;
+  float asp = uRes.x / uRes.y;
   float t = uTime * 0.16;                                     // slow, calm motion
   float mood = clamp(uMood, -1.0, 1.0);
+  float px = 1.2 / uRes.y;                                    // anti-alias width
 
-  // ---- sky: near-black navy at the top, violet glow on the horizon ----
-  vec3 navy = vec3(0.010, 0.012, 0.075);
-  vec3 violet = mix(vec3(0.22, 0.09, 0.74), vec3(0.14, 0.14, 0.80), 0.5 + 0.5 * mood);
-  vec3 lav = mix(vec3(0.40, 0.30, 0.80), vec3(0.32, 0.38, 0.86), 0.5 + 0.5 * mood);
-  float glowY = 0.50 + 0.015 * sin(t * 0.7);
-  vec3 col = mix(lav, violet, smoothstep(glowY - 0.08, glowY + 0.14, uv.y));
-  col = mix(col, navy, smoothstep(glowY + 0.08, 0.98, uv.y));
-  col += vec3(0.10, 0.05, 0.22) * exp(-pow((uv.y - glowY) * 6.0, 2.0)) * (0.8 + 0.2 * sin(t));
-
+  vec3 rcV = vec3(0.62, 0.66, 1.0), rcB = vec3(0.55, 0.64, 1.0);
   float e = 0.002;
-  // far hill (very soft)
-  { float f = sheetBack(uv.x, t), s = (sheetBack(uv.x + e, t) - f) / e;
-    sheet(col, uv, f, -s, 0.05, vec3(0.03, 0.10, 0.62), vec3(0.20, 0.34, 0.98), 0.15, 0.0, t); }
-  // main sheet
-  { float f = sheetMain(uv.x, t), s = (sheetMain(uv.x + e, t) - f) / e;
+
+  // soft focus: the far sheets stay blurry, only the near edges get a crisp glowing line
+  const float bBack = 0.040, bMid = 0.012, bFront = 0.030;   // edge blur of each sheet
+  const float rMid = 0.55;                                     // strength of the blue mass's line
+
+  // ---- where every edge is (cheap), so layers hidden under an opaque one are never shaded ----
+  float fB = sheetBack(x, t),  sB = (sheetBack(x + e, t) - fB) / e,  dB = edgeDist(y, fB, sB, asp);
+  float fM = sheetMain(x, t),  sM = (sheetMain(x + e, t) - fM) / e,  dM = edgeDist(y, fM, sM, asp);
+  float fD = sheetMid(x, t),   sD = (sheetMid(x + e, t) - fD) / e,   dD = edgeDist(y, fD, sD, asp);
+  float fF = sheetFront(x, t), sF = (sheetFront(x + e, t) - fF) / e, dF = edgeDist(y, fF, sF, asp);
+  vec2 q = (uv - vec2(1.08 + 0.01 * sin(t * 0.5), -0.28)) * vec2(asp, 1.0);
+  float dd = length(q * vec2(1.0, 0.92)) - (0.62 + 0.012 * sin(t * 0.8));
+  float bB = max(bBack, px), bD = max(bMid, px), bF = max(bFront, px), bDune = px * 1.5;
+  int top = dd < -bDune ? 5 : dF < -bF ? 4 : dD < -bD ? 3 : dM < -px ? 2 : dB < -bB ? 1 : 0;
+
+  vec3 col = vec3(0.0);
+  vec3 litB = mix(vec3(0.11, 0.24, 1.0), vec3(0.06, 0.32, 1.0), 0.5 + 0.5 * mood);
+  if (top == 0) {
+    // ---- sky: near-black navy at the top, violet glow on the horizon ----
+    vec3 navy = vec3(0.010, 0.012, 0.075);
+    vec3 violet = mix(vec3(0.22, 0.09, 0.74), vec3(0.14, 0.14, 0.80), 0.5 + 0.5 * mood);
+    vec3 lav = mix(vec3(0.40, 0.30, 0.80), vec3(0.32, 0.38, 0.86), 0.5 + 0.5 * mood);
+    float glowY = 0.50 + 0.015 * sin(t * 0.7);
+    col = mix(lav, violet, smoothstep(glowY - 0.08, glowY + 0.14, y));
+    col = mix(col, navy, smoothstep(glowY + 0.08, 0.98, y));
+    float gy = (y - glowY) * 6.0;
+    col += vec3(0.10, 0.05, 0.22) * exp(-gy * gy) * (0.8 + 0.2 * sin(t));
+  }
+  if (top <= 1) {  // far hill
+    sheet(col, dB, -sB, bB, 0.05, vec3(0.03, 0.10, 0.62), vec3(0.20, 0.34, 0.98), 0.0, x, t);
+  }
+  if (top <= 2) {  // main sheet
     vec3 deepB = mix(vec3(0.0, 0.03, 0.40), vec3(0.0, 0.06, 0.42), 0.5 + 0.5 * mood);
-    vec3 litB = mix(vec3(0.11, 0.24, 1.0), vec3(0.06, 0.32, 1.0), 0.5 + 0.5 * mood);
-    sheet(col, uv, f, -s * 0.35, 0.9, deepB, litB, 1.15, 0.10, t); }
-  // mass under the sheet
-  { float f = sheetMid(uv.x, t), s = (sheetMid(uv.x + e, t) - f) / e;
-    sheet(col, uv, f, -s * 0.5 + 0.15, 0.35, vec3(0.0, 0.02, 0.20), vec3(0.10, 0.24, 0.92), 0.25, 0.03, t);
+    sheet(col, dM, -sM * 0.35, px, 0.9, deepB, litB, 0.10, x, t);
+    col += rim(dM, x, t, 1.0, rcV, 1.05, 1.0);
+  }
+  if (top <= 3) {  // mass under the sheet
+    sheet(col, dD, -sD * 0.5 + 0.15, bD, 0.35, vec3(0.0, 0.02, 0.20), vec3(0.10, 0.24, 0.92), 0.03, x, t);
+    col += rim(dD, x, t, 2.0, rcB, rMid, 1.0);
     // soft out-of-focus glow in the middle of the blue mass
-    float under = 1.0 - smoothstep(-0.03, 0.03, uv.y - f);
+    float under = 1.0 - smoothstep(-0.03, 0.03, dD);
     vec2 gp = (uv - vec2(0.56 + 0.03 * sin(t * 0.6), 0.34 + 0.02 * cos(t * 0.5))) * vec2(1.6, 2.6);
-    col += vec3(0.07, 0.15, 0.50) * exp(-dot(gp, gp) * 6.0) * under; }
-  // front-left bulge (out of focus)
-  { float f = sheetFront(uv.x, t), s = (sheetFront(uv.x + e, t) - f) / e;
-    sheet(col, uv, f, s * 0.6 + 0.2, 0.12, vec3(0.01, 0.02, 0.14), vec3(0.20, 0.26, 0.72), 0.18, 0.0, t); }
+    col += vec3(0.07, 0.15, 0.50) * exp(-dot(gp, gp) * 6.0) * under;
+  }
+  if (top <= 4) {  // front-left bulge
+    sheet(col, dF, sF * 0.6 + 0.2, bF, 0.12, vec3(0.01, 0.02, 0.14), vec3(0.20, 0.26, 0.72), 0.0, x, t);
+  }
 
   // ---- matte dune in the bottom-right corner, with fine grain ----
-  vec2 asp = vec2(uRes.x / uRes.y, 1.0);
-  vec2 cpos = vec2(1.08 + 0.01 * sin(t * 0.5), -0.28) ;
-  vec2 q = (uv - cpos) * asp;
-  float r = 0.62 + 0.012 * sin(t * 0.8);
-  float dd = length(q * vec2(1.0, 0.92)) - r;
-  float dm = 1.0 - smoothstep(-0.02, 0.02, dd);
+  float lightD = clamp(dot(normalize(q), vec2(-0.751, 0.660)), 0.0, 1.0);
+  float dm = 1.0 - smoothstep(-bDune, bDune, dd);
   if (dm > 0.0) {
-    vec2 nrm = normalize(q);
-    float lightD = clamp(dot(nrm, normalize(vec2(-0.75, 0.66))), 0.0, 1.0);
-    float grain = fbm(uv * uRes / 3.0) * 0.5 + hash(floor(uv * uRes / 1.5)) * 0.5;
-    vec3 duneC = mix(vec3(0.04, 0.06, 0.26), vec3(0.46, 0.52, 0.80), pow(lightD, 1.6));
-    duneC *= 0.85 + 0.3 * grain;
-    duneC += vec3(0.5, 0.55, 0.9) * exp(-abs(dd) / 0.012) * 0.25 * lightD;   // soft rim
+    float grain = hash(floor(gl_FragCoord.xy));                               // fine static grain, no fbm
+    vec3 duneC = mix(vec3(0.04, 0.06, 0.26), vec3(0.46, 0.52, 0.80), lightD * sqrt(lightD));
+    duneC *= 0.92 + 0.16 * grain;
     col = mix(col, duneC, dm);
   }
+  col += rim(dd, uv.y, t, 5.0, vec3(0.62, 0.66, 0.95), 0.45, 1.0) * min(lightD + 0.2, 1.0);
 
   // vignette + film grain
   vec2 v = uv - 0.5;
   col *= 1.0 - 0.45 * dot(v, v);
-  col += (hash(uv * uRes + fract(uTime) * 100.0) - 0.5) * 0.022;
+  col += (hash(gl_FragCoord.xy + fract(uTime) * 100.0) - 0.5) * 0.022;
   gl_FragColor = vec4(pow(max(col, 0.0), vec3(0.95)), 1.0);
 }
 </script>
